@@ -1,0 +1,282 @@
+Python Revision, Coding Assessment & First AI Platform Project
+Week 1 · Final assessment
+Today is your first weekly assessment. We'll revise Days 1–6 and build a small but complete AI Model Management Platform using Python.
+The goal is not just to write code that works. It's to understand how to structure, validate, execute, and monitor an application.
+1. Revise Days 1–6
+Day	Topic	What you should know
+1	Python fundamentals	Variables, data types, conditions, loops
+2	Data structures	Lists, tuples, sets, dictionaries
+3	Functions	Parameters, arguments, return values
+4	Modules	Imports, exceptions, reusable files
+5	OOP	Classes, objects, constructors, inheritance
+6	Error handling	Try/except, raise, logging, debugging
+Quick revision examples
+Data structures
+models = ["GPT", "Claude", "Gemini"]
+
+model_info = {
+    "name": "GPT",
+    "provider": "OpenAI"
+}
+
+unique_models = set(models)
+
+Functions
+def calculate_cost(tokens, price):
+    return (tokens / 1000) * price
+
+OOP
+class AIModel:
+
+    def __init__(self, name):
+        self.name = name
+
+    def display(self):
+        return self.name
+
+
+model = AIModel("GPT")
+print(model.display())
+
+Exception handling
+try:
+    tokens = int("500")
+
+except ValueError:
+    print("Invalid input")
+
+3. Mini-project — AI Model Management Platform
+Week 1 practical project
+Build a Python application that manages AI models, validates token usage, estimates costs, and records activity.
+Project architecture
+Create this folder structure manually in VS Code:
+AI_Model_Management/
+│
+├── main.py
+├── models.py
+├── model_manager.py
+├── config.py
+├── logger.py
+│
+└── logs/
+    └── app.log
+File 1 — config.py
+Central configuration for your application.
+APP_NAME = "AI Model Management Platform"
+
+AVAILABLE_MODELS = {
+    "gpt": {
+        "provider": "OpenAI",
+        "price_per_1000_tokens": 0.002
+    },
+    "claude": {
+        "provider": "Anthropic",
+        "price_per_1000_tokens": 0.003
+    },
+    "gemini": {
+        "provider": "Google",
+        "price_per_1000_tokens": 0.001
+    }
+}
+
+These prices are illustrative placeholders, not live provider prices.
+File 2 — models.py
+Create the AI model class.
+class AIModel:
+
+    def __init__(self, name, provider, price):
+        self.name = name
+        self.provider = provider
+        self.price = price
+
+    def calculate_cost(self, tokens):
+
+        if not isinstance(tokens, int) or isinstance(tokens, bool):
+            raise TypeError("Tokens must be an integer.")
+
+        if tokens <= 0:
+            raise ValueError("Tokens must be greater than zero.")
+
+        return (tokens / 1000) * self.price
+
+    def get_details(self):
+
+        return {
+            "name": self.name,
+            "provider": self.provider,
+            "price": self.price
+        }
+
+File 3 — logger.py
+Configure application logging.
+import logging
+import os
+
+os.makedirs("logs", exist_ok=True)
+
+logging.basicConfig(
+    filename="logs/app.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logger = logging.getLogger("AIPlatform")
+
+File 4 — model_manager.py
+This file manages model registration and selection.
+from models import AIModel
+from config import AVAILABLE_MODELS
+from logger import logger
+
+
+class ModelManager:
+
+    def __init__(self):
+
+        self.models = {}
+
+        self.load_models()
+
+    def load_models(self):
+
+        for name, details in AVAILABLE_MODELS.items():
+
+            model = AIModel(
+                name=name,
+                provider=details["provider"],
+                price=details["price_per_1000_tokens"]
+            )
+
+            self.models[name] = model
+
+        logger.info("AI models loaded successfully")
+
+    def list_models(self):
+
+        return list(self.models.keys())
+
+    def get_model(self, model_name):
+
+        model_name = model_name.lower()
+
+        if model_name not in self.models:
+            raise ValueError(f"Model {model_name} is unavailable")
+
+        return self.models[model_name]
+
+    def process_request(self, model_name, tokens):
+
+        model = self.get_model(model_name)
+
+        cost = model.calculate_cost(tokens)
+
+        logger.info(
+            "Request processed: model=%s tokens=%s cost=%s",
+            model_name,
+            tokens,
+            cost
+        )
+
+        return {
+            "model": model.name,
+            "provider": model.provider,
+            "tokens": tokens,
+            "estimated_cost": round(cost, 6),
+            "status": "success"
+        }
+
+File 5 — main.py
+This is the entry point of the application.
+from model_manager import ModelManager
+from config import APP_NAME
+from logger import logger
+
+
+def main():
+
+    print("=" * 45)
+    print(APP_NAME)
+    print("=" * 45)
+
+    manager = ModelManager()
+
+    print("\nAvailable Models:")
+
+    for model in manager.list_models():
+        print("-", model)
+
+    model_name = input("\nSelect model: ")
+
+    try:
+
+        tokens = int(input("Enter token count: "))
+
+        response = manager.process_request(
+            model_name,
+            tokens
+        )
+
+        print("\nRequest Result")
+        print("-" * 30)
+
+        for key, value in response.items():
+            print(f"{key}: {value}")
+
+    except (ValueError, TypeError) as error:
+
+        logger.exception("Request failed")
+        print("Error:", error)
+
+    except Exception:
+
+        logger.exception("Unexpected application failure")
+        print("Something went wrong.")
+
+
+if __name__ == "__main__":
+    main()
+
+Test your application
+Run main.py in VS Code.
+Test case 1 — Successful request
+INPUT
+Select model: gpt
+Enter token count: 5000
+EXPECTED RESULT
+model: gpt
+provider: OpenAI
+tokens: 5000
+estimated_cost: 0.01
+status: success
+Test case 2 — Invalid model
+Select model: unknown
+Enter token count: 500
+Expected: Model unavailable error.
+Test case 3 — Invalid tokens
+Select model: claude
+Enter token count: -100
+Expected: Tokens must be greater than zero.
+4. What you have built
+Your application now has several important building blocks of a real AI platform:
+Component	Platform engineering concept
+AIModel	Model abstraction
+ModelManager	Model registry and selection
+config.py	Central configuration
+logger.py	Application observability
+Validation	Input protection
+main.py	Application entry point
+Note: This is a local model-management simulator. It does not yet call actual LLM APIs, authenticate users, or provide HTTP endpoints. Those capabilities come in subsequent weeks.
+5. Week 1 interview preparation
+Be ready to explain these questions aloud:
+1.	What is the difference between a list, tuple, set, and dictionary?
+2.	What is the difference between a function and a method?
+3.	Explain class, object, constructor, and inheritance.
+4.	What is the difference between return and print()?
+5.	How does Python exception handling work?
+6.	Why is logging important in production applications?
+7.	What is the purpose of separating configuration from business logic?
+8.	Why would an AI platform need a model manager?
+Important interview scenario:
+You have three AI models in your platform. How would you design a system that allows a user to select a model, submit token usage, estimate costs, and record failures?
+A strong answer should mention model registry, abstraction, validation, exception handling, logging, and separation of responsibilities.
+
